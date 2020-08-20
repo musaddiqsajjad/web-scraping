@@ -166,7 +166,7 @@ def get_product_info(keys):
 				if not x_in_y(soupCleaner(vehicleFitmentRaw), vehicleFitment):
 					vehicleFitment.extend(soupCleaner(vehicleFitmentRaw))
 					print(soupCleaner(vehicleFitmentRaw))
-					print("Got it!")
+					print("Got page 1!")
 		except AttributeError:
 			vehicleFitmentDict = "Universal Fitment"
 			pass
@@ -207,7 +207,8 @@ def get_product_info(keys):
 						if not x_in_y(soupCleaner(tempWaitList), vehicleFitment):
 							vehicleFitment.extend(soupCleaner(tempWaitList))
 							print(soupCleaner(tempWaitList))
-							print("Got it!")
+							currentGot = i
+							print(f"Got page {currentGot}!")
 
 					if "Loading interface..." not in tempWaitList and x_in_y(soupCleaner(tempWaitList), vehicleFitment) and currentPage == i:
 						break
@@ -215,6 +216,9 @@ def get_product_info(keys):
 					if "Loading interface..." in tempWaitList:
 						time.sleep(5)
 						continue
+						
+					if i > currentGot:
+						os.system('python3 close.py')
 
 
 
@@ -507,9 +511,10 @@ def get_product_info(keys):
 # Get ALL Products Information
 #--------------------------------------------------------------------------------------------------------------
 
+threads = []
 
 for path in paths:
-	#load productsList JSON 
+	#load productsList JSON into memory
 	with open(path, 'r') as f:
 		JSON = json.load(f)
 
