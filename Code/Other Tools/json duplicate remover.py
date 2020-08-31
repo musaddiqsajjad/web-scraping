@@ -12,9 +12,12 @@ JSON = {}
 paths = []
 bigdict = {}
 
-for file in os.listdir('/home/musaddiq/Desktop/Product List/Products List'):
-    if file.startswith("Products List"):
-        filePath = os.path.join("/home/musaddiq/Desktop/Product List/Products List", file)
+sourcepath = ""   #change as needed
+outputpath = ""   #change as needed
+
+for file in os.listdir():
+    if file.endswith(".json"):
+        filePath = os.path.join(sourcepath, file)
         paths.append(filePath)
 
 paths = natural_sort(paths)
@@ -23,7 +26,6 @@ print(*paths, sep = "\n")
 
 i = 0
 for path in paths:
-    #load productsList JSON into memory
     with open(path, 'r') as f:
         JSON = json.load(f)
 
@@ -38,6 +40,7 @@ seen = []
 
 j = 0
 d = 0
+
 for key in bigdict:
         print(j)
         j+=1
