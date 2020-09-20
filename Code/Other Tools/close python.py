@@ -7,12 +7,12 @@ import os
 
 def running():
 	for process in psutil.process_iter():	
-		if process.cmdline() == ['python3', 'getProducts.py']:
-			print('Process found! ----------------------------------------------------------------------------------------------------------------------------')
+		if process.cmdline() == ['python3', 'SCRIPT NAME HERE']:   #update your script's name here
+			print('Process found!')
 			return True
 		else:
 			continue
-	print('Process not running! ----------------------------------------------------------------------------------------------------------------------------')
+	print('Process not running!')
 	return False
 
 
@@ -24,6 +24,8 @@ if running():
 	sb = Popen(['ps', '-a'], stdout=subprocess.PIPE)
 	output, error = sb.communicate()
 	
+	#if chrome/chromium also needs to be closed
+	'''
 	print("Closing Chrome!")
 	target_process = "chrome"
 	for line in output.splitlines():
@@ -34,6 +36,7 @@ if running():
 		except:
 			continue
 	print("Closed Chrome succesfully!")
+	'''
 	
 	print("Closing Python!")
 	target_process = "python3"
