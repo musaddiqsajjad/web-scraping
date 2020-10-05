@@ -1,3 +1,5 @@
+#version 1/10/2020 after sold out no price convert to float issue (added try catch in listpriceUSD) ... and adding a few scroll to home keys because highlights issue
+
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -21,6 +23,16 @@ from random import randint
 from fake_useragent import UserAgent
 
 
+#time.sleep(randint(10,20))
+
+import subprocess, platform
+def pingOk(sHost):
+	try:
+		output = subprocess.check_output("ping -{} 1 {}".format('n' if platform.system().lower()=="windows" else 'c', sHost), shell=True)
+	except Exception as e:
+		return False
+	return True
+
 #--------------------------------------------------------------------------------------------------------------
 # Get Product URLs
 #--------------------------------------------------------------------------------------------------------------
@@ -39,7 +51,7 @@ paths.sort()
 #--------------------------------------------------------------------------------------------------------------
 # Get One Product Information
 #--------------------------------------------------------------------------------------------------------------
- 
+
 def get_product_info(keys):
 	try:
 		fitmentPage = 1
@@ -54,37 +66,36 @@ def get_product_info(keys):
 				#print("\nProduct Already Done! Skipping...")
 				return
 			file.close()
-		
+
 		if (os.path.exists("/home/musaddiq/Desktop/Parts/5. Products/Images/Product %s/Full"%(productID)) and len(os.listdir("/home/musaddiq/Desktop/Parts/5. Products/Images/Product %s/Full"%(productID))) > 1 and os.path.exists(productsFileName)):
 			print("Multiple Images gathered before and JSON exists, skipping product safely")
 			with open("/home/musaddiq/Desktop/Parts/5. Products/doneURLs.txt", 'a') as urlfile:
 					urlfile.write(productURL+"\n")
 					urlfile.close()
 			return
-		
-		
-		
+
+
+
 		subsubCategory = keys[1]["Parent Subsubcategory"]
 		subCategory = keys[1]["Parent Subcategory"]
 		category = keys[1]["Parent Category"]
 
 		print(f"\nProcessing product [{productID}]. Opening webpage {productURL} \n \nPlease wait...")
-		
 
-		
+
+
 		if os.path.exists(productsFileName):
 			onlyneedimages = True
 			print("\nOnly images are needed!")
 		else:
 			onlyneedimages = False
 			print("\nProcessing complete product...")
-		
+
 		now = datetime.now()
 
 		current_time = now.strftime("%H:%M:%S")
 		print("\nCurrent Time =", current_time)
-		
-		#setting up Chrome options
+
 		#PROXY = "54.229.215.97:8888"
 		ua = UserAgent()
 		userAgent = ua.random
@@ -110,13 +121,11 @@ def get_product_info(keys):
 			if retries < 5:
 				try:
 					waiting = True
-					
-					#check website up
-					print("\nPinging \n")
+					print("\nPinging carparts.com...\n")
 					with open("/home/musaddiq/Desktop/Parts/5. Products/wget.txt", 'w') as wget:
 						wget.write("")
 					while waiting:
-						os.system('wget .com -O wget.txt >/dev/null 2>&1')
+						os.system('wget carparts.com -O wget.txt >/dev/null 2>&1')
 						if not os.path.getsize("wget.txt") == 0:
 							print("Ping success!")
 							waiting=False
@@ -131,10 +140,8 @@ def get_product_info(keys):
 					ready = True
 				except TimeoutException:
 					print("\nLoading took too much time!\n")
-					
-					#listing page skip
 					listingpage = driver.find_elements_by_id("MainSectionGrid")
-					
+
 					if listingpage:
 						print("\nURL Broken! Skipping page.")
 						with open("/home/musaddiq/Desktop/Parts/5. Products/brokenURLs.txt", 'a') as brokenurlfile:
@@ -143,8 +150,9 @@ def get_product_info(keys):
 						with open("/home/musaddiq/Desktop/Parts/5. Products/doneURLs.txt", 'a') as urlfile:
 							urlfile.write(productURL+"\n")
 							urlfile.close()
+						driver.close()
 						return
-					
+
 					driver.close()
 					ready = False
 					retries += 1
@@ -164,7 +172,7 @@ def get_product_info(keys):
 					urlfile.write(productURL+"\n")
 					urlfile.close()
 				return
-				
+
 		print("\nNavigating to end of page")
 		driver.find_element_by_xpath('/html/body').send_keys(Keys.CONTROL+Keys.END)
 		time.sleep(randint(1,2))
@@ -182,21 +190,21 @@ def get_product_info(keys):
 		time.sleep(randint(1,2))
 		driver.find_element_by_xpath('/html/body').send_keys(Keys.CONTROL+Keys.END)
 		time.sleep(randint(1,2))
-		driver.find_element_by_xpath('/html/body').send_keys(Keys.CONTROL+Keys.END)
+		driver.find_element_by_xpath('/html/body').send_keys(Keys.CONTROL+Keys.HOME)
 		time.sleep(randint(1,2))
-		driver.find_element_by_xpath('/html/body').send_keys(Keys.CONTROL+Keys.END)
+		driver.find_element_by_xpath('/html/body').send_keys(Keys.CONTROL+Keys.HOME)
 		time.sleep(randint(1,2))
-		
+
 		if not onlyneedimages:
 			time.sleep(randint(10,20))
-			
-			print("\nGetting Highlights")	
-			
+
+			print("\nGetting Highlights")
+
 			content = driver.page_source
 			contentCopy = copy.deepcopy(content) #copy for later use in pricing
-			
+
 			time.sleep(randint(3,5))
-			
+
 			content = driver.page_source
 			soup = BeautifulSoup(content,features="html.parser")
 
@@ -206,9 +214,9 @@ def get_product_info(keys):
 
 			actions = ActionChains(driver)
 			actions.move_to_element(highlightselement).perform()
-			
+
 			time.sleep(randint(1,5))
-			
+
 			#with open("/home/musaddiq/Desktop/Parts/5. Products/highlightsSoup.txt", 'w') as high:
 			#	high.write(soup.get_text())
 			#	high.close()
@@ -248,127 +256,131 @@ def get_product_info(keys):
 						indexOfPrevious = len(soupToClean) + 1
 				soupToClean = soupToClean[:indexOfPrevious]
 				return(soupToClean)
-			
+
 			#get Fitment Data
-			print("\nGetting Fitment")			
-			
-			vehicleFitment = []
-			time.sleep(randint(10,15))
-			
-			fitmentelement = driver.find_element_by_id("vehicleFitment")
-			actions = ActionChains(driver)
-			actions.move_to_element(fitmentelement).perform()
-			
 			try:
-				pageList = [text for text in soup.find('div', attrs={'id':'vehicleFitment'}).stripped_strings]
-				pageList = pageList[len(pageList)-1]
-				pageList1 = pageList[:pageList.index("|")]
-				pages = [int(s) for s in pageList1.split() if s.isdigit()]
+				print("\nGetting Fitment")
 
-				pageList2 = pageList[pageList.index("|"):]
-				totalItems = [int(s) for s in pageList2.split() if s.isdigit()]
-				totalItems = totalItems[2]
+				vehicleFitment = []
+				time.sleep(randint(10,15))
 
-				print(f"\nTotal Items To Gather = {totalItems}")
+				fitmentelement = driver.find_element_by_id("vehicleFitment")
+				actions = ActionChains(driver)
+				actions.move_to_element(fitmentelement).perform()
 
-				start = pages[0]
-				end = pages[1]
-			except:
-				totalItems = 0
-				start = 0
-				end = 1
-				pass
+				try:
+					pageList = [text for text in soup.find('div', attrs={'id':'vehicleFitment'}).stripped_strings]
+					pageList = pageList[len(pageList)-1]
+					pageList1 = pageList[:pageList.index("|")]
+					pages = [int(s) for s in pageList1.split() if s.isdigit()]
 
-			try:
-				time.sleep(randint(1,2))
-				print(f"\nGathering Fitment Data, Page 1 of {end}")
-				newContent = driver.page_source
-				newSoup = BeautifulSoup(newContent,features="html.parser")
-				vehicleFitmentRaw = [text for text in newSoup.find('div', attrs={'id':'vehicleFitment'}).stripped_strings]
+					pageList2 = pageList[pageList.index("|"):]
+					totalItems = [int(s) for s in pageList2.split() if s.isdigit()]
+					totalItems = totalItems[2]
 
-				if "Loading interface..." not in vehicleFitmentRaw:
-					if not x_in_y(soupCleaner(vehicleFitmentRaw), vehicleFitment):
-						vehicleFitment.extend(soupCleaner(vehicleFitmentRaw))
-						print(soupCleaner(vehicleFitmentRaw))
-						print("Got it!")
-			except AttributeError:
-				vehicleFitmentDict = "Universal Fitment"
-				pass
+					print(f"\nTotal Items To Gather = {totalItems}")
 
-			if not start == 0:
-			
-				for i in range(start+1,end+1):
-				
-					time.sleep(randint(10,15))
-					print(f"\nGathering Fitment Data, Page {i} of {end}")
+					start = pages[0]
+					end = pages[1]
+				except:
+					totalItems = 0
+					start = 0
+					end = 1
+					pass
 
-					driver.find_element_by_id("pagination-next").click()
+				try:
+					time.sleep(randint(1,2))
+					print(f"\nGathering Fitment Data, Page 1 of {end}")
+					newContent = driver.page_source
+					newSoup = BeautifulSoup(newContent,features="html.parser")
+					vehicleFitmentRaw = [text for text in newSoup.find('div', attrs={'id':'vehicleFitment'}).stripped_strings]
 
-					time.sleep(randint(2,4))
+					if "Loading interface..." not in vehicleFitmentRaw:
+						if not x_in_y(soupCleaner(vehicleFitmentRaw), vehicleFitment):
+							vehicleFitment.extend(soupCleaner(vehicleFitmentRaw))
+							print(soupCleaner(vehicleFitmentRaw))
+							print("Got it!")
+				except AttributeError:
+					vehicleFitmentDict = "Universal Fitment"
+					pass
 
-					start = time.time()
+				if not start == 0:
 
-					while time.time() - start < 180:
-						tempContent = driver.page_source
-						tempSoup = BeautifulSoup(tempContent,features="html.parser")
-						tempWaitList = [text for text in tempSoup.find('div', attrs={'id':'vehicleFitment'}).stripped_strings]
+					for i in range(start+1,end+1):
 
+						time.sleep(randint(10,15))
+						print(f"\nGathering Fitment Data, Page {i} of {end}")
+
+						driver.find_element_by_id("pagination-next").click()
+
+						time.sleep(randint(2,4))
+
+						start = time.time()
+
+						while time.time() - start < 180:
+							tempContent = driver.page_source
+							tempSoup = BeautifulSoup(tempContent,features="html.parser")
+							tempWaitList = [text for text in tempSoup.find('div', attrs={'id':'vehicleFitment'}).stripped_strings]
+
+							try:
+								pageListfinal = [text for text in tempSoup.find('div', attrs={'id':'vehicleFitment'}).stripped_strings]
+								pageListfinal = pageListfinal[len(pageListfinal)-1]
+								pageListfinal = pageListfinal[:pageListfinal.index("|")]
+								newpagesfinal = [int(s) for s in pageListfinal.split() if s.isdigit()]
+
+								newstartfinal = newpagesfinal[0]
+								newendfinal = newpagesfinal[1]
+
+							except:
+								newstartfinal = 0
+								newendfinal = 1
+								pass
+
+							currentPage = newstartfinal
+
+							if "Loading interface..." not in tempWaitList:
+								if not x_in_y(soupCleaner(tempWaitList), vehicleFitment):
+									vehicleFitment.extend(soupCleaner(tempWaitList))
+									print(soupCleaner(tempWaitList))
+									print("\nGot it!")
+
+							if "Loading interface..." not in tempWaitList and x_in_y(soupCleaner(tempWaitList), vehicleFitment) and currentPage == i:
+								break
+
+							if "Loading interface..." in tempWaitList:
+								time.sleep(5)
+								continue
+
+				if not (totalItems*3.5 <= len(vehicleFitment) <= totalItems*4.5) and not totalItems == 0:
+					print(len(vehicleFitment))
+					print(totalItems*4)
+					print("\n Closing due to incomplete fitment")
+					os.system('python3 close.py')
+
+				try:
+					vehicleFitmentDict = {}
+					fitmentID = 1
+					for value in range(0,len(vehicleFitment),4):
 						try:
-							pageListfinal = [text for text in tempSoup.find('div', attrs={'id':'vehicleFitment'}).stripped_strings]
-							pageListfinal = pageListfinal[len(pageListfinal)-1]
-							pageListfinal = pageListfinal[:pageListfinal.index("|")]
-							newpagesfinal = [int(s) for s in pageListfinal.split() if s.isdigit()]
-
-							newstartfinal = newpagesfinal[0]
-							newendfinal = newpagesfinal[1]
-
-						except:
-							newstartfinal = 0
-							newendfinal = 1
+							vehicleFitmentDict.update({
+								fitmentID : {
+								'VehicleName':vehicleFitment[value],
+								'Submodel':vehicleFitment[value+1],
+								'Engine':vehicleFitment[value+2],
+								'Fitment Information':vehicleFitment[value+3]
+								}
+							})
+							fitmentID += 1
+						except Exception as e:
+							print(e)
 							pass
-
-						currentPage = newstartfinal
-
-						if "Loading interface..." not in tempWaitList:
-							if not x_in_y(soupCleaner(tempWaitList), vehicleFitment):
-								vehicleFitment.extend(soupCleaner(tempWaitList))
-								print(soupCleaner(tempWaitList))
-								print("\nGot it!")
-
-						if "Loading interface..." not in tempWaitList and x_in_y(soupCleaner(tempWaitList), vehicleFitment) and currentPage == i:
-							break
-
-						if "Loading interface..." in tempWaitList:
-							time.sleep(5)
-							continue
-
-			if not len(vehicleFitment) == totalItems*4 and not totalItems == 0:
-				print(len(vehicleFitment))
-				print(totalItems*4)
-				print("\n Closing due to incomplete fitment")
-				os.system('python3 close.py')
-			
-			try:
-				vehicleFitmentDict = {}
-				fitmentID = 1
-				for value in range(0,len(vehicleFitment),4):
-					try:
-						vehicleFitmentDict.update({
-							fitmentID : {
-							'VehicleName':vehicleFitment[value],
-							'Submodel':vehicleFitment[value+1],
-							'Engine':vehicleFitment[value+2],
-							'Fitment Information':vehicleFitment[value+3]
-							}
-						})
-						fitmentID += 1
-					except Exception as e:
-						print(e)
-						pass
-			except AttributeError:
-				vehicleFitmentDict = "Universal Fitment"
+				except AttributeError:
+					vehicleFitmentDict = "Universal Fitment"
+					pass
+			except NoSuchElementException:
+				vehicleFitmentDict = "Not Available"
 				pass
-		
+
 		#get product images
 		print("\nGetting Images")
 		driver.find_element_by_xpath('/html/body').send_keys(Keys.CONTROL+Keys.HOME)
@@ -379,7 +391,7 @@ def get_product_info(keys):
 		time.sleep(randint(1,2))
 		driver.find_element_by_xpath('/html/body').send_keys(Keys.CONTROL+Keys.HOME)
 		time.sleep(randint(1,2))
-		
+
 		try:
 			imageContent = driver.page_source
 			imageSoup = BeautifulSoup(imageContent,features="html.parser")
@@ -400,12 +412,12 @@ def get_product_info(keys):
 				print("\nDownloading Image for Product from %s" %(_))
 				imagePath = "/home/musaddiq/Desktop/Parts/5. Products/Images/Product %s/Full/Product %s Full Image %s"%(productID,productID,fullImageID)
 				imagePaths = "./Images/Product %s/Full/Product %s Full Image %s"%(productID,productID,fullImageID)
-				fullImagePaths.append(imagePaths)
 				retryDownload = 0
 				while retryDownload < 20:
 					try:
 						urllib.request.urlretrieve(_, imagePath)
 						print("Downloaded Full Image %s" %(fullImageID))
+						fullImagePaths.append(imagePaths)
 						fullImageID += 1
 						break
 					except urllib.error.URLError:
@@ -464,16 +476,19 @@ def get_product_info(keys):
 					image_url_single = "https://upload.wikimedia.org/wikipedia/en/f/f9/No-image-available.jpg"
 
 				test = driver.find_elements_by_id("my-gallery")
-				
+
 				if not os.path.exists("/home/musaddiq/Desktop/Parts/5. Products/Images/Product %s/Full"%(productID)):
 						os.makedirs("/home/musaddiq/Desktop/Parts/5. Products/Images/Product %s/Full"%(productID))
 				imagePath = "/home/musaddiq/Desktop/Parts/5. Products/Images/Product %s/Full/Product %s Full Image 1"%(productID,productID)
 				retryDownload = 0
+				fullImagePaths = []
+				imagePaths = "./Images/Product %s/Full/Product %s Full Image 1"%(productID,productID)
 				while retryDownload < 20:
 					time.sleep(randint(1,5))
 					try:
 						urllib.request.urlretrieve(image_url_single, imagePath)
 						print("\nDownloaded Full Image 1")
+						fullImagePaths.append(imagePaths)
 						break
 					except urllib.error.URLError:
 						retryDownload += 1
@@ -485,11 +500,7 @@ def get_product_info(keys):
 						retryDownload += 1
 						print(e)
 						continue
-
-				imagePaths = "./Images/Product %s/Full/Product %s Full Image 1"%(productID,productID)
-				fullImagePaths = []
-				fullImagePaths.append(imagePaths)
-				
+						
 				'''
 				if not os.path.exists("/home/musaddiq/Desktop/Parts/5. Products/Images/Product %s/Square"%(productID)):
 					os.makedirs("/home/musaddiq/Desktop/Parts/5. Products/Images/Product %s/Square"%(productID))
@@ -522,8 +533,7 @@ def get_product_info(keys):
 			pass
 
 		time.sleep(randint(5,7))
-		
-		
+
 		#get product pricing
 		if not onlyneedimages:
 
@@ -531,7 +541,7 @@ def get_product_info(keys):
 
 			print("\nGetting Pricing")
 			time.sleep(randint(1,4))
-			
+
 			try:
 				pricingLocator = pricingsoup.find('div', attrs={'id':'skuTitle'}).next_sibling
 				pricingLocator = pricingLocator.children
@@ -543,8 +553,10 @@ def get_product_info(keys):
 			except Exception as e:
 				print(e)
 				pass
-
-			if "You Save" in pricingList[2]:
+			
+			print(f"\nPricing list = {pricingList}")
+			
+			if "You Save" in pricingList[1]:
 				pricingUSD = pricingList[0]
 				#pricingUSD = re.sub("[^\d\.]", "", pricingUSD)
 				if "," in pricingUSD:
@@ -557,21 +569,27 @@ def get_product_info(keys):
 					except ValueError:
 						pricingUSD = 0
 
-
+				print(f"\nPricingUSD = {pricingUSD}")
+				
 				pricingSAR = float(pricingUSD)*3.75
+				
+				print(f"\nPricingSAR = {pricingSAR}")
 
-				listPriceUSD = pricingList[2]
+				listPriceUSD = pricingList[1]
 				groups = listPriceUSD.split(':')
 				listPriceUSD = groups[len(groups)-1]
 				#listPriceUSD = re.sub("[^\d\.]", "", listPriceUSD)
 				if "," in listPriceUSD:
 					listPriceUSD = listPriceUSD.replace(",","")
-				listPriceUSD = float(listPriceUSD[2:])
-
+				try:
+					listPriceUSD = float(listPriceUSD[2:])
+				except ValueError:
+					listPriceUSD = 0
+					
 				listPriceSAR = float(listPriceUSD)*3.75
 
 				try:
-					manfNum = pricingList[4]
+					manfNum = pricingList[3]
 					manfNum = manfNum[manfNum.index("#")+1:]
 				except ValueError:
 					manfNum = "Not Available"
@@ -597,17 +615,17 @@ def get_product_info(keys):
 					manfNum = manfNum[manfNum.index("#")+1:]
 				except ValueError:
 					manfNum = "Not Available"
-			
+
 			#Getting Information
 			print("\nGetting Information")
 			infoelement = driver.find_element_by_id("productInfo")
 			actions = ActionChains(driver)
 			actions.move_to_element(infoelement).perform()
 			time.sleep(randint(5,10))
-			
+
 			#content = driver.page_source
 			#soup = BeautifulSoup(content,features="html.parser")
-			
+
 			#with open("/home/musaddiq/Desktop/Parts/5. Products/infoSoup.txt", 'w') as info:
 				#info.write(soup.get_text())
 				#info.close()
@@ -664,8 +682,8 @@ def get_product_info(keys):
 			urlfile.close()
 
 		if 'driver' in locals():
-			driver.quit()	
-	
+			driver.quit()
+
 	except Exception as e:
 		print(e)
 		os.system('python3 close.py')
@@ -687,8 +705,6 @@ for path in paths:
 	print("\nLoaded Products List JSON! Dictionary size: %s"%len(JSON))
 	for items in JSON.items():
 		get_product_info(items)
-
-
 
 
 
