@@ -1,4 +1,5 @@
 #version 1/10/2020 after sold out no price convert to float issue (added try catch in listpriceUSD) ... and adding a few scroll to home keys because highlights issue
+#192.168.200.69
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -23,8 +24,8 @@ from random import randint
 from fake_useragent import UserAgent
 
 
-#time.sleep(randint(10,20))
 
+#ping test
 import subprocess, platform
 def pingOk(sHost):
 	try:
@@ -53,13 +54,16 @@ paths.sort()
 #--------------------------------------------------------------------------------------------------------------
 
 def get_product_info(keys):
+
 	try:
+
 		fitmentPage = 1
 		products = {}
 		productID = keys[1]["ID"]
 		productURL = keys[1]["URL"]
 		productsFileName = "/home/musaddiq/Desktop/Parts/5. Products/Products/Product " + str(productID) + ".json"
-
+		
+		#--------------------------------------------------------------------------------------------------------------
 		#skipping done products
 		with open("/home/musaddiq/Desktop/Parts/5. Products/doneURLs.txt", 'r') as file:
 			if productURL in file.read():
@@ -74,29 +78,35 @@ def get_product_info(keys):
 					urlfile.close()
 			return
 
-
+		#--------------------------------------------------------------------------------------------------------------
 
 		subsubCategory = keys[1]["Parent Subsubcategory"]
 		subCategory = keys[1]["Parent Subcategory"]
 		category = keys[1]["Parent Category"]
 
 		print(f"\nProcessing product [{productID}]. Opening webpage {productURL} \n \nPlease wait...")
-
-
-
+		
+		#--------------------------------------------------------------------------------------------------------------
+		
+		#Skipping products that only need images
+		
 		if os.path.exists(productsFileName):
 			onlyneedimages = True
 			print("\nOnly images are needed!")
 		else:
 			onlyneedimages = False
 			print("\nProcessing complete product...")
-
+		
+		#--------------------------------------------------------------------------------------------------------------
+		
 		now = datetime.now()
 
 		current_time = now.strftime("%H:%M:%S")
 		print("\nCurrent Time =", current_time)
 
-		#PROXY = "54.229.215.97:8888"
+		#--------------------------------------------------------------------------------------------------------------
+
+		#adding a fake useragent
 		ua = UserAgent()
 		userAgent = ua.random
 		print(userAgent)
@@ -112,18 +122,28 @@ def get_product_info(keys):
 		options.add_argument(f'user-agent={userAgent}')
 		#options.add_argument("--proxy-server=54.229.215.97:8888")
 
+		#--------------------------------------------------------------------------------------------------------------
+
 		#open product webpage
 		delay = 30 # seconds
 		ready = False
 		retries = 0
+		
+		#--------------------------------------------------------------------------------------------------------------
+		
+		#opening page
 		while not ready:
 			time.sleep(randint(10,25))
 			if retries < 5:
 				try:
 					waiting = True
+					
+					#ping test
+					
 					print("\nPinging carparts.com...\n")
 					with open("/home/musaddiq/Desktop/Parts/5. Products/wget.txt", 'w') as wget:
 						wget.write("")
+					
 					while waiting:
 						os.system('wget carparts.com -O wget.txt >/dev/null 2>&1')
 						if not os.path.getsize("wget.txt") == 0:
@@ -132,14 +152,23 @@ def get_product_info(keys):
 							break
 						else:
 							continue
+							
+					#check elements loaded
 					driver = webdriver.Chrome("/snap/bin/chromium.chromedriver", options=options)
 					driver.get(productURL)
 					myElem = WebDriverWait(driver, delay).until(lambda x: x.find_elements_by_id("my-gallery") or x.find_elements_by_css_selector("[data-test~=carousel-item-0]") and x.find_elements_by_id("highlights"))[0]
 					time.sleep(randint(10,15))
+					
 					print("\nPage is ready!")
 					ready = True
+					
+				#--------------------------------------------------------------------------------------------------------------	
+					
 				except TimeoutException:
+				
 					print("\nLoading took too much time!\n")
+					
+					#check if listing page, skip if yes
 					listingpage = driver.find_elements_by_id("MainSectionGrid")
 
 					if listingpage:
@@ -172,7 +201,9 @@ def get_product_info(keys):
 					urlfile.write(productURL+"\n")
 					urlfile.close()
 				return
-
+		
+		#--------------------------------------------------------------------------------------------------------------
+		
 		print("\nNavigating to end of page")
 		driver.find_element_by_xpath('/html/body').send_keys(Keys.CONTROL+Keys.END)
 		time.sleep(randint(1,2))
@@ -196,6 +227,11 @@ def get_product_info(keys):
 		time.sleep(randint(1,2))
 
 		if not onlyneedimages:
+			
+			#--------------------------------------------------------------------------------------------------------------
+			
+			#get highlights
+			
 			time.sleep(randint(10,20))
 
 			print("\nGetting Highlights")
@@ -232,7 +268,10 @@ def get_product_info(keys):
 				i += 2
 
 			highlights = dict(zip(highlightsRaw[::2], highlightsRaw[1::2]))
+			
+			#--------------------------------------------------------------------------------------------------------------
 
+			#function if string found in list
 			def x_in_y(query, base):
 				try:
 					l = len(query)
@@ -245,6 +284,10 @@ def get_product_info(keys):
 						return True
 				return False
 
+			#--------------------------------------------------------------------------------------------------------------
+
+			#function to clean soup string
+			
 			def soupCleaner(soupToClean):
 				soupToClean = soupToClean[5:]
 				try:
@@ -257,6 +300,8 @@ def get_product_info(keys):
 				soupToClean = soupToClean[:indexOfPrevious]
 				return(soupToClean)
 
+			#--------------------------------------------------------------------------------------------------------------
+
 			#get Fitment Data
 			try:
 				print("\nGetting Fitment")
@@ -268,7 +313,12 @@ def get_product_info(keys):
 				actions = ActionChains(driver)
 				actions.move_to_element(fitmentelement).perform()
 
+				#--------------------------------------------------------------------------------------------------------------
+				
+				#getting page numbers				
 				try:
+				
+					#get page numbers
 					pageList = [text for text in soup.find('div', attrs={'id':'vehicleFitment'}).stripped_strings]
 					pageList = pageList[len(pageList)-1]
 					pageList1 = pageList[:pageList.index("|")]
@@ -288,6 +338,9 @@ def get_product_info(keys):
 					end = 1
 					pass
 
+				#--------------------------------------------------------------------------------------------------------------
+
+				#get Fitment
 				try:
 					time.sleep(randint(1,2))
 					print(f"\nGathering Fitment Data, Page 1 of {end}")
@@ -350,13 +403,18 @@ def get_product_info(keys):
 							if "Loading interface..." in tempWaitList:
 								time.sleep(5)
 								continue
-
+				#--------------------------------------------------------------------------------------------------------------
+				
+				
+				#close if not all fitment gathered
 				if not (totalItems*3.5 <= len(vehicleFitment) <= totalItems*4.5) and not totalItems == 0:
 					print(len(vehicleFitment))
 					print(totalItems*4)
 					print("\n Closing due to incomplete fitment")
 					os.system('python3 close.py')
 
+
+				#write to dict
 				try:
 					vehicleFitmentDict = {}
 					fitmentID = 1
@@ -380,7 +438,9 @@ def get_product_info(keys):
 			except NoSuchElementException:
 				vehicleFitmentDict = "Not Available"
 				pass
-
+			
+		#--------------------------------------------------------------------------------------------------------------
+			
 		#get product images
 		print("\nGetting Images")
 		driver.find_element_by_xpath('/html/body').send_keys(Keys.CONTROL+Keys.HOME)
@@ -531,7 +591,9 @@ def get_product_info(keys):
 				print(e)
 				pass
 			pass
-
+		
+		#--------------------------------------------------------------------------------------------------------------
+		
 		time.sleep(randint(5,7))
 
 		#get product pricing
@@ -615,7 +677,9 @@ def get_product_info(keys):
 					manfNum = manfNum[manfNum.index("#")+1:]
 				except ValueError:
 					manfNum = "Not Available"
-
+			
+			#--------------------------------------------------------------------------------------------------------------
+			
 			#Getting Information
 			print("\nGetting Information")
 			infoelement = driver.find_element_by_id("productInfo")
@@ -639,7 +703,9 @@ def get_product_info(keys):
 			productInfo = ""
 			for child in information.children:
 				productInfo = (str(child))
-
+			
+			#--------------------------------------------------------------------------------------------------------------
+			
 			#jsonify
 			newProduct = {
 				"Product%s" %productID: {
@@ -667,7 +733,9 @@ def get_product_info(keys):
 					}
 				}
 
-			print(json.dumps(newProduct, indent = 2))
+			print(json.dumps(newProduct, indent = 2))	
+			
+			#--------------------------------------------------------------------------------------------------------------
 
 			writing = json.dumps(newProduct, indent = 2)
 
